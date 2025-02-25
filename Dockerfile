@@ -1,13 +1,18 @@
-# Build stage
-# Start PHP-FPM server
+# Stage 1: Node.js for assets
+FROM node:18-alpine as node-builder
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Stage 2: PHP & Laravel
 FROM php:8.2-fpm-alpine
 
-# Set environment variables for user
-ARG user=develop
-ARG uid=1000
-
-# Install required packages
-RUN apk update && apk add --no-cache \
+# Install dependencies in a single layer
+RUN apk add --no-cache \
+    nginx \
+    supervisor \
     curl \
     libpng-dev \
     libjpeg-turbo-dev \
@@ -15,55 +20,35 @@ RUN apk update && apk add --no-cache \
     libxml2-dev \
     zip \
     unzip \
-    shadow \
-    supervisor \
-    nginx \
-    nodejs \
-    npm \
     sqlite-dev \
-    redis \
-    oniguruma-dev \
-    autoconf \
-    g++ \
-    make \
-    gcc
-
-# Install PHP extensions
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd bcmath exif pdo pdo_mysql pdo_sqlite
-
-# Install Redis extension for PHP
-RUN pecl install redis && docker-php-ext-enable redis
-
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install gd pdo pdo_mysql pdo_sqlite 
+    
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
-# Set up a non-root user
-RUN useradd -G www-data,root -u $uid -d /home/$user $user
-RUN mkdir -p /home/$user/.composer && \
-    chown -R $user:$user /home/$user
-
-# Copy application files
-COPY . /var/www/
-RUN chown -R $user:$user /var/www
-
-# Switch to non-root user
-USER $user
-
-# Install PHP dependencies
-RUN composer install --no-interaction --no-scripts
-
-# Install and build Node dependencies
-RUN npm ci && npm run build
-
-# Switch back to root for final operations
-USER root
+# Create a user (only once, no switching)
+RUN addgroup -S www && adduser -S www -G www
 
 # Set working directory
 WORKDIR /var/www
 
-# Expose necessary ports
+# Copy app files in one step
+COPY . /var/www/
+COPY --from=node-builder /app/public/build /var/www/public/build
+
+# Set permissions (only once)
+RUN chown -R www:www /var/www
+
+# Install PHP dependencies as non-root user
+USER www
+RUN composer install --no-dev --optimize-autoloader
+
+# Switch back to root
+USER root
+
+# Expose ports
 EXPOSE 9000
 
-# Start services
+# Start PHP-FPM
 CMD ["php-fpm", "-F"]
