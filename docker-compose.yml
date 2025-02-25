@@ -1,0 +1,34 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        user: develop
+        uid: 1000
+    image: poc-laravel
+    container_name: poc-laravel-app
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
+    networks:
+      - poc-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: poc-laravel-nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx:/etc/nginx/conf.d/
+    networks:
+      - poc-network
+    depends_on:
+      - app
+
+networks:
+  poc-network:
+    driver: bridge
