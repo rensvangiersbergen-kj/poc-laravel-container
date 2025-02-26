@@ -1,5 +1,5 @@
 # Stage 1: Node.js for assets
-FROM node:18-alpine as node-builder
+FROM node:18-alpine AS node-builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
