@@ -1,11 +1,12 @@
 services:
   app:
+    environment:
+      - APP_NAME=poc-laravel-prod
+      - APP_ENV=production
+      - APP_DEBUG=false
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        user: develop
-        uid: 1000
     image: poc-laravel
     container_name: poc-laravel-app
     restart: unless-stopped
@@ -20,7 +21,7 @@ services:
     container_name: poc-laravel-nginx
     restart: unless-stopped
     ports:
-      - "8000:80"
+      - "80:80"
     volumes:
       - ./:/var/www
       - ./docker/nginx:/etc/nginx/conf.d/
