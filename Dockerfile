@@ -9,48 +9,22 @@ RUN npm run build
 # Stage 2: PHP & Laravel
 FROM php:8.2-fpm-alpine
 
-# Install dependencies and clean up in a single layer
+# Install minimal dependencies
 RUN apk add --no-cache \
     nginx \
     supervisor \
-    curl \
-    libpng-dev \
-    libjpeg-turbo-dev \
-    freetype-dev \
     libxml2-dev \
-    zip \
-    unzip \
-    sqlite-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd pdo pdo_mysql pdo_sqlite \
-    # Remove build dependencies
-    && apk del --no-cache \
-        libpng-dev \
-        libjpeg-turbo-dev \
-        freetype-dev \
-        libxml2-dev
-    
+    && docker-php-ext-install pdo pdo_mysql \
+    && apk del --no-cache libxml2-dev
+
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
-# Create non-root user
-RUN addgroup -S www && adduser -S www -G www
-
-# Set working directory
-WORKDIR /var/www
-
 # Copy app files
-COPY --chown=www:www . /var/www/
-COPY --chown=www:www --from=node-builder /app/public/build /var/www/public/build
+COPY --chown=www:www . /var/www/html
+COPY --chown=www:www --from=node-builder /app/public/build /var/www/html/public/build
 
-# Create storage directory structure and set permissions
-RUN mkdir -p storage/framework/{sessions,views,cache} \
-    && mkdir -p storage/logs \
-    && chown -R www:www storage bootstrap/cache \
-    && chmod -R 775 storage bootstrap/cache
-
-# Install PHP dependencies as non-root user
-USER www
+# Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
 # Expose the port Laravel runs on
@@ -58,4 +32,4 @@ EXPOSE 9000
 
 # Add healthcheck
 HEALTHCHECK --interval=30s --timeout=3s \
-    CMD curl -f http://localhost/health || exit 1
+    CMD php artisan health:check || exit 1
