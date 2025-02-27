@@ -13,23 +13,17 @@ FROM php:8.2-fpm-alpine
 RUN apk add --no-cache \
     nginx \
     supervisor \
-    libxml2-dev \
-    && docker-php-ext-install pdo pdo_mysql \
-    && apk del --no-cache libxml2-dev
-
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
+    && docker-php-ext-install pdo_mysql
 
 # Copy app files
 COPY --chown=www:www . /var/www/html
 COPY --chown=www:www --from=node-builder /app/public/build /var/www/html/public/build
 
-# Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader
+# Install Composer & run install
+COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Expose the port Laravel runs on
-EXPOSE 9000
+# Port is already exposed thanks to fpm-alpine by default, uncomment to expose other ports
+# EXPOSE 9000
 
-# Add healthcheck
-HEALTHCHECK --interval=30s --timeout=3s \
-    CMD php artisan health:check || exit 1
+# CMD is already included in fpm-alpine to run the php-fpm server by default
