@@ -1,5 +1,7 @@
+name: laravel-poc-container
 services:
   web:
+    container_name: laravel-nginx
     build:
       context: .
       dockerfile: ./docker/nginx/Dockerfile
@@ -27,6 +29,7 @@ services:
 
   php-fpm:
     # For the php-fpm service, we will create a custom image to install the necessary PHP extensions and setup proper permissions.
+    container_name: laravel-php-fpm
     build:
       context: .
       dockerfile: ./docker/php-fpm/Dockerfile
