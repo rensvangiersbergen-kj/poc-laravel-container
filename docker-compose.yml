@@ -34,8 +34,6 @@ services:
       context: .
       dockerfile: ./docker/php-fpm/Dockerfile
     restart: unless-stopped
-    ports:
-      - "80:80"
     volumes:
       - laravel-storage:/var/www/storage  # Mount the storage volume
     env_file:
