@@ -1,35 +1,60 @@
+name: laravel-poc-container
 services:
-  app:
-    environment:
-      - APP_NAME=poc-laravel-prod
-      - APP_ENV=production
-      - APP_DEBUG=false
+  web:
+    container_name: laravel-nginx
     build:
       context: .
-      dockerfile: Dockerfile
-    image: poc-laravel
-    container_name: poc-laravel-app
-    restart: unless-stopped
-    working_dir: /var/www/
+      dockerfile: ./docker/nginx/Dockerfile
+    restart: unless-stopped # Automatically restart unless the service is explicitly stopped
     volumes:
-      - ./:/var/www
+      # Mount the 'laravel-storage' volume to '/var/www/storage' inside the container.
+      # -----------------------------------------------------------
+      # This volume stores persistent data like uploaded files and cache.
+      # The ':ro' option mounts it as read-only in the 'web' service because Nginx only needs to read these files.
+      # The 'php-fpm' service mounts the same volume without ':ro' to allow write operations.
+      # -----------------------------------------------------------
+      - laravel-storage:/var/www/storage:ro
     networks:
-      - poc-network
+      - laravel
+    ports:
+      # Map port 80 inside the container to the port specified by 'NGINX_PORT' on the host machine.
+      # -----------------------------------------------------------
+      # This allows external access to the Nginx web server running inside the container.
+      # For example, if 'NGINX_PORT' is set to '8080', accessing 'http://localhost:8080' will reach the application.
+      # -----------------------------------------------------------
+      - "${NGINX_PORT:-80}:80"
+    depends_on:
+      php-fpm:
+        condition: service_healthy  # Wait for php-fpm health check
 
-  nginx:
-    image: nginx:alpine
-    container_name: poc-laravel-nginx
+  php-fpm:
+    # For the php-fpm service, we will create a custom image to install the necessary PHP extensions and setup proper permissions.
+    container_name: laravel-php-fpm
+    build:
+      context: .
+      dockerfile: ./docker/php-fpm/Dockerfile
     restart: unless-stopped
     ports:
       - "80:80"
     volumes:
-      - ./:/var/www
-      - ./docker/nginx:/etc/nginx/conf.d/
+      - laravel-storage:/var/www/storage  # Mount the storage volume
+    env_file:
+      - .env
     networks:
-      - poc-network
-    depends_on:
-      - app
+      - laravel
+    healthcheck:
+      test: ["CMD-SHELL", "php-fpm-healthcheck || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
 networks:
-  poc-network:
-    driver: bridge
+  # Attach the service to the 'laravel' network.
+  # -----------------------------------------------------------
+  # This custom network allows all services within it to communicate using their service names as hostnames.
+  # For example, 'php-fpm' can connect to 'postgres' by using 'postgres' as the hostname.
+  # -----------------------------------------------------------
+  laravel:
+
+volumes:
+  laravel-storage:
