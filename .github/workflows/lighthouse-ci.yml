@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    # Configure lighthouse test --> https://www.foo.software/docs/lighthouse-check-github-action/configuration
     - name: Lighthouse
       uses: foo-software/lighthouse-check-action@master
       id: lighthouseCheck
