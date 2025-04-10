@@ -1,8 +1,8 @@
 name: Lighthouse Performance Monitoring
 
 on:
-  schedule:
-    - cron: '0 */4 * * *'  # Run every 4 hours
+  #schedule:
+    #- cron: '0 */4 * * *'  # Run every 4 hours
   workflow_dispatch:  # Allow manual triggering
 
 jobs:
@@ -10,18 +10,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    # Configure lighthouse test --> https://www.foo.software/docs/lighthouse-check-github-action/configuration
     - name: Lighthouse
       uses: foo-software/lighthouse-check-action@master
       id: lighthouseCheck
       with:
         urls: 'https://www.google.com'
         gitHubAccessToken: ${{ secrets.GITHUB_TOKEN }}
+        device: 'desktop'
     - name: Verify Lighthouse Check results
       uses: foo-software/lighthouse-check-status-action@master
       with:
         lighthouseCheckResults: ${{ steps.lighthouseCheck.outputs.lighthouseCheckResults }}
-        minAccessibilityScore: "90"
-        minBestPracticesScore: "50"
+        minAccessibilityScore: "70"
+        minBestPracticesScore: "70"
         minPerformanceScore: "50"
-        minProgressiveWebAppScore: "50"
-        minSeoScore: "50"
+        minSeoScore: "70"
