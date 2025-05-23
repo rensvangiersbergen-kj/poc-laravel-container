@@ -5,4 +5,7 @@ if [ ! "$(ls -A /var/www/html/storage)" ]; then
   chown -R www-data:www-data /var/www/html/storage
 fi
 
+php artisan config:clear
+php artisan cache:clear
+
 exec /usr/bin/supervisord -c /etc/supervisord.conf

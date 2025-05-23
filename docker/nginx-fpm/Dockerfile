@@ -1,5 +1,5 @@
 # Stage 1: Build assets
-FROM node:18-alpine as frontend-builder
+FROM node:18-alpine AS frontend-builder
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ RUN npm install && npm run build
 
 
 # Stage 2: Laravel app with PHP-FPM + Nginx
-FROM php:8.2-fpm
+FROM php:8.2.28-fpm
 
 # Install system dependencies and clean up after
 RUN apt-get update && apt-get install -y --no-install-recommends \

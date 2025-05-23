@@ -8,14 +8,6 @@ services:
     env_file:
       - .env
     restart: unless-stopped # Automatically restart unless the service is explicitly stopped
-    volumes:
-      # Mount the 'laravel-storage' volume to '/var/www/storage' inside the container.
-      # -----------------------------------------------------------
-      # This volume stores persistent data like uploaded files and cache.
-      # The ':ro' option mounts it as read-only in the 'web' service because Nginx only needs to read these files.
-      # The 'php-fpm' service mounts the same volume without ':ro' to allow write operations.
-      # -----------------------------------------------------------
-      - laravel-storage:/var/www/html/storage
     networks:
       - laravel
     ports:
@@ -33,6 +25,3 @@ networks:
   # For example, 'php-fpm' can connect to 'postgres' by using 'postgres' as the hostname.
   # -----------------------------------------------------------
   laravel:
-
-volumes:
-  laravel-storage:
