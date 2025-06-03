@@ -1,0 +1,35 @@
+name: Trivy Security Scan
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  trivy-scan:
+    name: Trivy Full Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Trivy
+        run: |
+          sudo apt-get update
+          sudo apt-get install wget apt-transport-https gnupg lsb-release -y
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy -y
+
+      - name: Scan configs (Dockerfile, etc.)
+        run: |
+          trivy config --exit-code 1 --severity HIGH,CRITICAL .
+
+      - name: Build Docker image
+        run: docker build -f docker/nginx-fpm/Dockerfile -t securityscan:latest .
+
+      - name: Scan built Docker image for vulnerabilities
+        run: |
+          trivy image --exit-code 1 --severity HIGH,CRITICAL securityscan:latest
