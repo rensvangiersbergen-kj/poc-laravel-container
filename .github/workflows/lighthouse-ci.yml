@@ -15,7 +15,7 @@ jobs:
       uses: foo-software/lighthouse-check-action@master
       id: lighthouseCheck
       with:
-        urls: 'https://www.google.com'
+        urls: 'https://riskey-login-test.salmondune-368ff1af.northeurope.azurecontainerapps.io'
         gitHubAccessToken: ${{ secrets.GITHUB_TOKEN }}
         device: 'desktop'
     - name: Verify Lighthouse Check results
